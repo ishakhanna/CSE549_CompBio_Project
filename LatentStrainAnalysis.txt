@@ -1,0 +1,6 @@
+Progress Report on attempting to use the software from Detection of low-abundance bacterial strains in metagenomic datasets by eigengenome partitioning
+(http://www.nature.com/nbt/journal/v33/n10/full/nbt.3329.html#supplementary-information)
+
+
+https://github.com/brian-cleary/LatentStrainAnalysis
+
