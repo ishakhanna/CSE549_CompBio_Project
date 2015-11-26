@@ -1,13 +1,44 @@
-Progress Report on attempting to use the software from Detection of low-abundance bacterial strains in metagenomic datasets by eigengenome partitioning
+A. Progress Report on using the software from "Detection of low-abundance bacterial strains in metagenomic datasets by eigengenome partitioning"
 (http://www.nature.com/nbt/journal/v33/n10/full/nbt.3329.html#supplementary-information)
 
+TODO:  add a very brief description of latent strain analysis algorithm
 
-https://github.com/brian-cleary/LatentStrainAnalysis
+I. Clustering Reads
 
-with the original paper data, and the cluster threshold of 0.8 (cosine similarity, roughly equivalent to sequence identity), we get 145 clusters for the metagenomic data
-with cluster threshodld of 0.9 on the same data, we get 1264 clusters
+We downloaded the software from https://github.com/brian-cleary/LatentStrainAnalysis, and after some difficulties with library dependencies managed to install and run it successfully.  
+Detailed instructions are on http://latentstrainanalysis.readthedocs.org/en/latest/getting_started.html
 
+The software is quirky, and occasionally throws obscure errors.  These seem to be the minimum requirements, without making any modifications to the code base.
+1. clear cluster_vectors/ hashed_reads/ Logs/ read_partitions/ directories before each run
+2. make sure all sample files start with SRR*.
+3. make sure all reads are paired;  read1 and read2 can be in the same or in separate files
+4. include the SpikeIn.fa file in the original_reads/ directory 
 
-for the first 100K paired end reads from the 10M random set, we get a single cluster with both 0.8, 0.9, and higher thresholds
+Furthermore, the software is meant to run in a cluster environment for large data anaysis.  180K reads require several GBs of RAM, so we will only attempt experiments within the same order of magnitude.
 
-instead, try 100K from the beginning of the sample, and 100K from the end for read1
+I.1 Verifying Original Data
+
+We ran 180K 100bp paired end reads dataset of the metagenomics libraries from the original paper, with the default cluster threshold of 0.8 (cosine similarity, roughly equivalent to sequence identity). The data separated into 145 clusters. Appropriately, setting cluster threshold to 0.9 on the same data, we get 1264 clusters.
+
+I.2 Trying Human Transcriptome Data 
+
+We are using a sub-sample of the 10M synthetic human transcriptome 75bp paired end reads sample made with flux generator (http://sammeth.net/confluence/display/SIM/Home). For the first 100K paired end reads from the 10M set (200K total reads), sample A, we get a single cluster with both 0.8, 0.9, and higher thresholds.  The algorithm fails to separate the data.
+
+Hypothesizing the reads from the beginning of the 10M set are too simililar, we created sample B. Sample B has 100K paired end reads from chromosome I, and 100K paired end reads from chrX and chrY (400K total reads).  Sample B still results in a single cluster with both 0.8, 0.9, and higher thresholds.
+
+I.3 Mix of Human Transcriptome and Metagenomics Data
+
+We hypothesized that even greater diversity will force cluster separation.  We create sample C, which is sample B with one of the metagenomics libraries added (SRR492191.10kReads.plusSpike.fastq, ~12K reads).  Sample C with a cluster threshold of 0.8 separated into 3 clusters.  Cluster 0 contained no metagenomic reads, and the majority of human reads, 50% from chrI and 50% from chrX and chrY. Cluster 1 contained the majority of reads from the metagenomic library, and a few hundred human reads, 50% from chrI and 50% from chrX and chrY. Cluster 2 contained 50 reads from the metagenomic library, and ~1/6 of the human reads, 50% from chrI and 50% from chrX and chrY.  Clearly, the human reads are not properly separating into clusters.
+
+We ran sample C on 0.9 cluster threshold, with almost identical results - three clusters, same distribution of reads.
+
+I.4 Varying k-mer Size
+
+We decided to see the effects of chaning the length of the k-mers.  From the methods section of the paper, we see that limiting the size of the hash table with respect to the k-mer length limits total hashed k-mer diversity.  We will try using shorter k-mers with the same hash table size.
+
+We tried this on the original metagenomics data, decreasing the k-mer length from 33 to 20, but keeping the hash table size at 2^22, cluster threshold of 0.8.  This resulted into the separation into 141 clusters.  Setting the k-mer length to 15 resulted in 151 clusters.  Given this fluctuation, we decided against pursuing this further with human reads.
+
+II. Data Analysis
+
+We need to determine the reason why the metagomics reads cluster well using the latent strain analysis, while the human transcriptome reads do not.  One potential explanation is the difference in the k-mer distributions.
+
