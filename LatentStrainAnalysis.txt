@@ -1,7 +1,7 @@
 A. Progress Report on using the software from "Detection of low-abundance bacterial strains in metagenomic datasets by eigengenome partitioning"
 (http://www.nature.com/nbt/journal/v33/n10/full/nbt.3329.html#supplementary-information)
 
-TODO:  add a very brief description of latent strain analysis algorithm
+Latent strain analysis algorithm (LSA) is implemented in this work with a streaming calculation of unobserved variables that the authors call eigengenomes. Eigengenomes reflect covariance in the abundance of short, fixed-length sequences, or k-mers. As the abundance of each genome in a sample is reflected in the abundance of each k-mer in that genome, eigengenome analysis can be used to partition reads from different genomes. We wanted to see if this methodology can be applied to partition the reads coming from the same, or similar genes, with human transcriptome data. 
 
 I. Clustering Reads
 
@@ -18,7 +18,7 @@ Furthermore, the software is meant to run in a cluster environment for large dat
 
 I.1 Verifying Original Data
 
-We ran 180K 100bp paired end reads dataset of the metagenomics libraries from the original paper, with the default cluster threshold of 0.8 (cosine similarity, roughly equivalent to sequence identity). The data separated into 145 clusters. Appropriately, setting cluster threshold to 0.9 on the same data, we get 1264 clusters.
+We ran 200K 100bp paired end reads dataset of the metagenomics libraries from the original paper, with the default cluster threshold of 0.8 (cosine similarity, roughly equivalent to sequence identity). The data separated into 145 clusters. Appropriately, setting cluster threshold to 0.9 on the same data, we get 1264 clusters.
 
 I.2 Trying Human Transcriptome Data 
 
@@ -42,3 +42,15 @@ II. Data Analysis
 
 We need to determine the reason why the metagomics reads cluster well using the latent strain analysis, while the human transcriptome reads do not.  One potential explanation is the difference in the k-mer distributions.
 
+We measure the k-mer distribution in the 200K metagenomic reads, considering the first 75bp from each read.  Similarly, we measure the k-mer distribution of 75bp 200K human transcriptome reads (only read1 from Sample B - 100K reads from chromosome 1 and 100K reads from chromosomes X and Y).  We consider k-mers of length 33, to be consistent with the clustering software. In each case the maximum number of potential unique k-mers is 8.6M. 
+
+We wrote a simple program for gettting the k-mer distribution - get_kmer_distribution.py - , and the resulting output files are human_reads_kmer_output.csv and metagenomic_reads_kmer_output.csv.  The first column in the output file is number of occurrences of a 33-mer in the set, and the second column is the # of distinct 33-mers with that count.
+
+Figure A1 summarizes the differences between the two distributions.  It is immediately apparent that the main difference is that metagenomic reads are half an order of magnitude more diverse than the human transcriptome reads:  there are 5.9M unique kmers in the metagenomic reads, while only 1.2M unique k-mers in the human transcriptome reads. We also note that, proportionally, the human transcriptome reads have more unique k-mers that appear a larger number of times - another indication that the human transcriptome reads have less diversity.
+
+The most common/frequent k-mer in the metagenomic sample appears 125 times, and is simply the end of the distribution.  In the human reads, the most common k-mer is an extreme outlier - it appears 156K times, while the second most common k-mer appears 775 times.  The most common kmer in the metagenomics sample appears to be a fairly random AT-rich sequence, while the human kmer outlier is a poly-A sequence.   This is not entirely unexpected given that poly-A repeats are abundant in coding and non-coding regions (http://www.ncbi.nlm.nih.gov/pmc/articles/PMC60178/), but degree of abundance is surprising.  
+
+Figures A2a and A2b present the two distributions (with the poly-A outlier removed) side by side.  In order to see some more detail, we use log scale for the y-axis - the number of distinct k-mers that appear x number of times.  Ignoring some noise, the main difference is that human transcriptome reads are less diverse, with more k-mers that are repeated a significantly larger number of times.
+
+This difference in the k-mer diversity offers an explanation of why the latent strain analysis algorithm is able to cluster the metagenomic reads but not the human transcriptome reads.
+ 
