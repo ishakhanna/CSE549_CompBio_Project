@@ -1,0 +1,11 @@
+Please install the following foer it to run: 
+
+1. boost c++ : Base, MPI and filesystem
+2. openMPI - it should work with any MPI frameork but we tested only with openmpi
+3. Google sparsehash
+
+How to run: 
+
+./main_lsh output_file_names input-files
+
+input-files are FASTQ files.
