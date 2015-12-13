@@ -1,0 +1,2 @@
+1.Using mermaid impelmentation to create clustering. 
+2. Mermaid uses - Shingling - approach similar to min-hash to create the clusters. 
