@@ -108,6 +108,7 @@ typedef struct {
     qual_t lqual;
     qual_t rqual;
     exts_t exts;
+    kmer_a id[100];
     kmer_a kmer[0];
 } __attribute__((packed)) qekmer_t;
 

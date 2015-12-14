@@ -14,16 +14,16 @@ void get_shingles(shingle_t* shingles, kmer_t kmer, size_t num_shingles)
 //	printf("kmer: %d\n" ,strlen(kmer));
     for_base_in_kmer(b, kmer, SHINGLE_LEN) {
     //for_base_in_kmer(b, kmer, num_shingles) {
-	printf("Base: %d\n",b);
+	//printf("Base: %d\n",b);
         shingles[0] <<= BITS_PER_BASE;
         shingles[0] |= b;
     } end_for;
 
     for (size_t i = 1; i < num_shingles; i++) {
         uint32_t mask = ((1 << SHINGLE_LEN * BITS_PER_BASE) - 1) & ~3;
-	printf("\nMask: %d\t",mask);
+	//printf("\nMask: %d\t",mask);
         uint32_t shingle = (shingles[i-1] << BITS_PER_BASE) & mask;
-	printf("Shingle: %d",shingle);
+	//printf("Shingle: %d",shingle);
         shingles[i] = shingle | get_base(kmer, SHINGLE_LEN + i - 1);
     }
 
@@ -44,14 +44,14 @@ size_t lsh(kmer_t kmer, k_t k)
     
     for (size_t j = 0; j < num_shingles; j++) {
         shingle_t shingle = shingles[j];
-      	printf("cur shingle; %d\n",shingle);  	
+      	//printf("cur shingle; %d\n",shingle);  	
         uint32_t idx = knuth_hash(shingle);
         if (idx < min) {
             min = idx;
-	    printf("min:%d\n",min);
+	   //printf("min:%d\n",min);
         }
     }
-    printf("\nreturning:%d\n",min);
+    //printf("\nreturning:%d\n",min);
 	
     return min;
 }

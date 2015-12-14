@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <sstream>
 
 #include "fastq_reader.h"
 #include "kmer.h"
@@ -89,6 +90,8 @@ bool FastQReader::read_next(qekmer_t* qekmer)
 {
     while (true) {
         bool skip_kmer = false;
+	char geneId_buf[MAX_LINE_LEN];
+	string geneId;
 
         if (curr_path == paths.end()) {
             return false;
@@ -99,9 +102,10 @@ bool FastQReader::read_next(qekmer_t* qekmer)
         if (read_col ==  0) {
             //char read_buf[MAX_LINE_LEN];
             char quals_buf[MAX_LINE_LEN];
-
             /* Ignore the header line. */
-            curr_file.ignore(MAX_LINE_LEN, '\n');
+            //curr_file.ignore(MAX_LINE_LEN, '\n');
+		//Get the GeneID
+            curr_file.getline(geneId_buf, MAX_LINE_LEN);
             /* Get the actual read. */
             curr_file.getline(read, MAX_LINE_LEN);
             /* Ignore +. */
@@ -113,8 +117,16 @@ bool FastQReader::read_next(qekmer_t* qekmer)
             for (size_t i = 0; i < read_len; i++) {
                 quals[i] = quals_buf[i] - ILLUMINA_QUAL_OFFSET;
             }
+	    geneId = string(geneId_buf);
+	    istringstream iss(geneId);
+	    int i =0;
+	    while(geneId_buf[i]!='\0'){
+	    	qekmer->id[i]=geneId_buf[i];
+	        i++;
+	    }
+	    qekmer->id[i] = '\0';
         }
-	printf("\nread_len: %d read_col: %d\n",read_len,read_col);
+	//printf("\nread_len: %d read_col: %d id: %s\n",read_len,read_col,qekmer->id);
 	if(read_len!=76){
 		skip_kmer = true; 
 	}
@@ -132,7 +144,7 @@ bool FastQReader::read_next(qekmer_t* qekmer)
                 	skip_kmer = true;
         	        break;
 	            }
-	    	printf("%c",char_base);
+	    	//printf("%c",char_base);
 	    //if(char_base == 0){
 		//	break;
 	//	}

@@ -32,7 +32,7 @@ namespace fs  = boost::filesystem;
 #define LSH_ON 1
 
 #define LOAD_FROM_UFX 0
-
+#define HASH_SIZE 12289
 static const k_t k = 76; // Config::K;
 static const int q_min = 19; // Config::K;
 
@@ -45,8 +45,10 @@ int get_kmer_bin(qekmer_t* qekmer, k_t k, int world_size)
     size_t hash = kmer_hash(0, qekmer->kmer, k);
 #endif
     //printf("world_size: %d\n",world_size);
-    printf("Node_ID: %d\n",hash%12289);
+    printf("GeneId ID: %s",qekmer->id);
+    printf("Node_ID: %d\n",hash%HASH_SIZE);
     return hash % world_size;
+    //return hash % HASH_SIZE;
 }
 
 /* Checks to see if the qekmer meets the criteria to being sent. For example,
@@ -165,16 +167,6 @@ void print_ufxs(const char* outprefix, KmerExtMap& kmer_ext_map, int rank)
     fclose(outfile);
 }
 
-void load_ufxs(char* file_prefix, KmerExtMap& kmer_ext_map, int rank)
-{
-    stringstream ss;
-    ss << file_prefix << ".ufx." << rank;
-    FILE* infile = fopen(ss.str().c_str(), "r");
-    if (infile == NULL)
-        panic("Could not open file: %s\n", ss.str().c_str());
-    kmer_ext_map.load_ufxs(infile);
-    fclose(infile);
-}
 
 void print_contigs(char* outprefix, ContigStore& contig_store, int rank)
 {
@@ -198,88 +190,6 @@ void print_contigs(char* outprefix, KmerContigMap& kmer_contig_map, int rank)
     fclose(outfile);
 }
 
-/* Collects contigs on to one process (rank == 0). */
-void gather_contigs(KmerContigMap& kmer_contig_map, ContigStore& contig_store, mpi::communicator& world, const char* outprefix)
-{
-    // TODO: Make the contig counting neater
-    //stringstream ss;
-    //ss << outprefix << ".contig-lengths." << world.rank();
-    //FILE* outfile = fopen(ss.str().c_str(), "w");
-    //if (outfile == NULL)
-    //    panic("Could not open file: %s\n", ss.str().c_str());
-    // TODO: Do we need to free all the kmers in the kmer_count_map?
-
-    typedef struct {
-        size_t size;
-        base left_ext;
-        base right_ext;
-        char s[0];
-    } __attribute__((packed)) contig_packet_t;
-
-    NetHub nethub(world, 0);
-
-    if (world.rank() == 0) {
-        bool node_done[world.size()];
-        for (int i = 0; i < world.size(); i++) {
-            node_done[i] = false;
-        }
-        bool all_done = false;
-        while (!all_done) {
-            all_done = true;
-            for (int i = 1; i < world.size(); i++) {
-                if (node_done[i]) continue;
-
-                int status;
-                contig_packet_t* cpacket;
-                size_t size;
-                while ((status = nethub.vrecv(i, (void**) &cpacket, &size)) == 0) {
-                    Contig* contig = new Contig();
-                    contig->left_ext = cpacket->left_ext;
-                    contig->right_ext = cpacket->right_ext;
-                    contig->s = std::string(cpacket->s, cpacket->size);
-                    //contig->verify();
-                    kmer_contig_map.insert(contig);
-                    free(cpacket);
-                }
-
-                if (status == 1)
-                    node_done[i] = true;
-                else
-                    all_done = false;
-
-            }
-        }
-    }
-
-    for (vector<Contig*>::iterator it = contig_store.contigs.begin();
-            it != contig_store.contigs.end();
-            it++) {
-        Contig* c = *it;
-        //c->verify();
-        // TODO: Make the contig counting neater
-        //fprintf(outfile, "%lu\n", c->s.size());
-        if (world.rank() == 0) {
-            kmer_contig_map.insert(c);
-        } else {
-            size_t cpacket_size = sizeof(contig_packet_t) + c->s.size();
-            contig_packet_t* cpacket = (contig_packet_t*) malloc(cpacket_size);
-            cpacket->size = c->s.size();
-            cpacket->left_ext = c->left_ext;
-            cpacket->right_ext = c->right_ext;
-            memcpy(cpacket->s, c->s.c_str(), cpacket->size);
-            nethub.vsend(0, cpacket, cpacket_size);
-            free(cpacket);
-        }
-    }
-
-    if (world.rank() == 0)
-        contig_store.contigs.clear();
-
-    nethub.done();
-
-    // TODO: Make the contig counting neater
-    //fclose(outfile);
-}
 
 
 int main(int argc, char* argv[])
@@ -308,9 +218,7 @@ int main(int argc, char* argv[])
      * ======================= */
     KmerExtMap* kmer_ext_map = new KmerExtMap(k);
     KmerCountMap* kmer_count_map = new KmerCountMap(k);
-    ContigStore* contig_store = new ContigStore(k);
-    KmerContigMap* kmer_contig_map = new KmerContigMap(k);
-    ContigStore* joined_contig_store = new ContigStore(k);
+
 
     FastQReader* reader = get_reader(argc - 2, &argv[2], world, k);
     build_store(reader, *kmer_count_map, world);
