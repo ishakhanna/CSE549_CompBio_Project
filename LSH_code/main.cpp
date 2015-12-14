@@ -19,6 +19,7 @@
 #include "kmer_contig_map.h"
 #include "iostream"
 #include <stdio.h>
+#include <fstream>
 using namespace std;
 namespace mpi = boost::mpi;
 namespace fs  = boost::filesystem;
@@ -35,6 +36,9 @@ namespace fs  = boost::filesystem;
 #define HASH_SIZE 12289
 static const k_t k = 76; // Config::K;
 static const int q_min = 19; // Config::K;
+string OutFileName;
+
+std::ofstream outFileP;
 
 int get_kmer_bin(qekmer_t* qekmer, k_t k, int world_size)
 {
@@ -45,8 +49,9 @@ int get_kmer_bin(qekmer_t* qekmer, k_t k, int world_size)
     size_t hash = kmer_hash(0, qekmer->kmer, k);
 #endif
     //printf("world_size: %d\n",world_size);
-    printf("GeneId ID: %s",qekmer->id);
-    printf("Node_ID: %d\n",hash%HASH_SIZE);
+    //printf("%s",qekmer->id);
+    //printf(" %d\n",hash%HASH_SIZE);
+    outFileP << qekmer->id << " " << hash%HASH_SIZE << endl;
     return hash % world_size;
     //return hash % HASH_SIZE;
 }
@@ -112,11 +117,11 @@ void build_store(FastQReader* r, KmerCountMap& kmer_count_map, mpi::communicator
 
     while (!all_done) {
         if (r->read_next(send_qekmer)) {
-	     cout << "reading next left:" << send_qekmer->lqual << "right:" << send_qekmer->rqual << " \n" << endl;
+	     //cout << "reading next left:" << send_qekmer->lqual << "right:" << send_qekmer->rqual << " \n" << endl;
 	    //cout << send_qekmer->kmer.size << "\n" ;
             if (check_qekmer_qual(send_qekmer, k)) {
                 //canonize_qekmer(send_qekmer, k);
-		cout << "\n--------------------------------\n" ;
+		//cout << "\n--------------------------------\n" ;
 
 		//cout <<  send_qekmer->kmer << "\n";
 
@@ -124,11 +129,11 @@ void build_store(FastQReader* r, KmerCountMap& kmer_count_map, mpi::communicator
                 int node_id = get_kmer_bin(send_qekmer, k, world.size());
 		//printf( "node_id: %d\n", node_id);// "\n";
 		//cout << send_qekmer->kmer << "\n";
-		cout << "********************************" ;
+		//cout << "********************************" ;
                 nethub.send(node_id, send_qekmer);
             }
         } else {
-	    cout << "nothing to read\n" ;
+	    //cout << "nothing to read\n" ;
             if (!done_reading) {
                 nethub.done();
                 done_reading = true;
@@ -191,7 +196,6 @@ void print_contigs(char* outprefix, KmerContigMap& kmer_contig_map, int rank)
 }
 
 
-
 int main(int argc, char* argv[])
 {
     mpi::environment env(argc, argv);
@@ -201,9 +205,11 @@ int main(int argc, char* argv[])
         printf("main_lsh outfile infile...\n");
         exit(1);
     }
-
-    Config::load_config("mermaid.conf");
-
+	
+    OutFileName = argv[1];
+    cout << OutFileName << endl;
+    Config::load_config("lsh.conf");
+    outFileP.open(OutFileName.c_str(), std::ios_base::app);
     //if (world.rank() == 0)
     //{
     //    printf("PID %d on %d ready for attach\n", getpid(), world.rank());
