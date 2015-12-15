@@ -7,16 +7,16 @@ target = open("outFinal.txt",'a');
 target.truncate();
 with open("out.txt") as fp:
 	for line in fp:
-		print line;
+		#print line;
 		linesplit = line.split(" ");
-		print linesplit[0];
-		print linesplit[1];
+		#print linesplit[0];
+		#print linesplit[1];
 		idSplit = linesplit[0].split(':');
-		print idSplit;
+		#print idSplit;
 		s=':';
 		seq = (idSplit[2], idSplit[4], idSplit[5], idSplit[6]);
 		geneId =  s.join(seq);
-		print geneId;
+		#print geneId;
 		target.write(geneId);
 		target.write(" ");
 		target.write(linesplit[1]);
