@@ -9,3 +9,6 @@ How to run:
 ./main_lsh output_file_names input-files
 
 input-files are FASTQ files.
+output is present in out.txt
+run python postProcessing.py to get output file in required format outFinal.txt
+RUn ./getR to get number statistics of the results.  
